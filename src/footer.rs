@@ -5,6 +5,7 @@ use itext::itext::layout::{Border, Cell, ElementPropertyContainer, Paragraph, Ta
 use jni::JNIEnv;
 
 /// A document's footer
+#[derive(Debug, Clone)]
 pub struct Footer {
     /// The fields to be included in the footer
     pub fields: Vec<String>,

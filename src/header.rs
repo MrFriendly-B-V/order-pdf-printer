@@ -9,6 +9,7 @@ use itext::javax::ImageInputStream;
 use jni::JNIEnv;
 
 /// The header of the document
+#[derive(Debug, Clone)]
 pub struct Header {
     /// The logo's bytes
     pub logo: Vec<u8>,
@@ -21,6 +22,7 @@ pub struct Header {
 }
 
 /// An entity which has an address
+#[derive(Debug, Clone)]
 pub struct AddressableParty {
     /// The company name
     pub name: String,
@@ -33,6 +35,7 @@ pub struct AddressableParty {
 }
 
 /// An address
+#[derive(Debug, Clone)]
 pub struct Address {
     /// Street name
     pub street: String,
