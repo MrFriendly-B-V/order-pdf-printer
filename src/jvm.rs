@@ -4,12 +4,20 @@ use std::fs;
 use std::io::Write;
 use tempfile::TempDir;
 
+/// Java Virtual Machine
 pub struct JVM {
     jvm: JavaVM,
     _dep_dir: TempDir,
 }
 
 impl JVM {
+    /// Create a new JVM instance
+    ///
+    /// # Errors
+    ///
+    /// - If an IO error occurs
+    /// - If a JNI error occurs
+    /// - If the JVM cannot be launched
     pub fn new() -> Result<Self, Error> {
         let dependency_dir = TempDir::new()?;
 
@@ -47,6 +55,12 @@ impl JVM {
         })
     }
 
+    /// Attach the current thread to the JVM.
+    /// The thread is detached when the returned AttachGuard is dropped.
+    ///
+    /// # Errors
+    ///
+    /// If a JNI error occurs
     pub fn attach(&self) -> Result<AttachGuard, Error> {
         Ok(self.jvm.attach_current_thread()?)
     }

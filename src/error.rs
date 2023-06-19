@@ -1,5 +1,6 @@
 use thiserror::Error;
 
+/// Error which can occur while rendering a PDF document.
 #[derive(Debug, Error)]
 pub enum Error {
     #[error("{0}")]
