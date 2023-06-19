@@ -13,8 +13,10 @@ pub struct Invoice {
     pub header: Header,
     /// The invoice footer
     pub footer: Footer,
-    /// The reference ID
-    pub reference_id: String,
+    /// Our or the customer's reference
+    pub reference: String,
+    /// The invoice's order ID
+    pub order_id: String,
     /// The invoice ID
     pub invoice_id: String,
     /// The invoice date
@@ -77,12 +79,13 @@ impl PdfRenderable for Invoice {
         if let Some(note) = &self.note {
             let paragraph = Paragraph::new_with_text(note, env)?;
             paragraph
+                .set_bold(env)?
                 .set_margin_top(30.0, env)?
                 .set_margin_bottom(30.0, env)?;
             target.document.add(paragraph, env)?;
         }
 
-        self.render_invoice_totals(&target.document, env)?;
+        self.render_invoice_totals(&target, env)?;
 
         self.footer.render(target, env)?;
 
@@ -91,7 +94,7 @@ impl PdfRenderable for Invoice {
 }
 
 const CONCERNING_LABEL: &str = "Betreft";
-const OUR_REFERENCE_LABEL: &str = "Onze referentie";
+const OUR_REFERENCE_LABEL: &str = "Referentie";
 const ORDER_ID_PREFIX: &str = "Bestelling #:";
 const INVOICE_DATE_LABEL: &str = "Factuurdatum";
 const EXPIRY_DATE_LABEL: &str = "Vervaldatum";
@@ -103,7 +106,7 @@ const QUANTITY_LABEL: &str = "Aantal";
 const PRICE_LABEL: &str = "Prijs";
 const DISCOUNT_LABEL: &str = "Korting";
 const SUBTOTAL_ITEM_PRICE_LABEL: &str = "Bedrag";
-const TOTAL_ITEM_LABEL: &str = "Totaalbedrag";
+const TOTAL_ITEM_LABEL: &str = "Totaal";
 
 const TOTAL_EXCLUDING_VAT_LABEL: &str = "Totaal excl. BTW";
 const TOTAL_VAT_LABEL: &str = "BTW";
@@ -144,7 +147,7 @@ impl Invoice {
             .add_cell(
                 Cell::new(env)?.set_border(Border::NoBorder, env)?.add(
                     &Paragraph::new_with_text(
-                        &format!("{} {}", ORDER_ID_PREFIX, self.reference_id),
+                        &format!("{} {}", ORDER_ID_PREFIX, self.order_id),
                         env,
                     )?,
                     env,
@@ -206,13 +209,7 @@ impl Invoice {
                 Cell::new(env)?
                     .set_border(Border::NoBorder, env)?
                     .set_border_bottom(border.clone(), env)?
-                    .add(
-                        &Paragraph::new_with_text(
-                            &format!("{} {}", ORDER_ID_PREFIX, self.reference_id),
-                            env,
-                        )?,
-                        env,
-                    )?,
+                    .add(&Paragraph::new_with_text(&self.reference, env)?, env)?,
                 env,
             )?
             .add_cell(
@@ -355,9 +352,12 @@ impl Invoice {
             Some((format!("{:.2}", item.quantity as f32), false)),
             Some((self.currency.to_string(), false)),
             Some((format!("{:.2}", item.price_per_unit), true)),
-            self.any_item_has_discount().then_some((format!("{:.2}%", item.discount_percentage), true)),
-            self.any_item_has_discount().then_some((self.currency.to_string(), true)),
-            self.any_item_has_discount().then_some((format!("{:.2}", item.subtotal_price_per_unit), true)),
+            self.any_item_has_discount()
+                .then_some((format!("{:.2}%", item.discount_percentage), true)),
+            self.any_item_has_discount()
+                .then_some((self.currency.to_string(), true)),
+            self.any_item_has_discount()
+                .then_some((format!("{:.2}", item.subtotal_price_per_unit), true)),
             Some((self.currency.to_string(), false)),
             Some((format!("{:.2}", item.total_price), true)),
         ];
@@ -389,7 +389,7 @@ impl Invoice {
     /// If a JNI error occurs
     fn render_invoice_totals<'a>(
         &self,
-        document: &Document<'a>,
+        render_target: &RenderTarget<'a>,
         env: &mut JNIEnv<'a>,
     ) -> Result<(), Error> {
         let border = Border::Solid {
@@ -399,7 +399,8 @@ impl Invoice {
 
         let table = Table::new(&[1.0, 1.0, 1.0], env)?;
 
-        let page_width = document
+        let page_width = render_target
+            .document
             .get_pdf_document(env)?
             .get_default_page_size(env)?
             .get_width(env)?;
@@ -408,9 +409,13 @@ impl Invoice {
 
         table
             .set_fixed_position(
-                document.get_left_margin(env)? + document.get_right_margin(env)? + page_width / 2.0,
-                document.get_bottom_margin(env)? + BOTTOM_OFFSET,
-                page_width - document.get_left_margin(env)? - document.get_right_margin(env)?,
+                render_target.document.get_left_margin(env)?
+                    + render_target.document.get_right_margin(env)?
+                    + page_width / 2.0,
+                render_target.document.get_bottom_margin(env)? + BOTTOM_OFFSET,
+                page_width
+                    - render_target.document.get_left_margin(env)?
+                    - render_target.document.get_right_margin(env)?,
                 env,
             )?
             .use_all_available_width(env)?
@@ -471,14 +476,15 @@ impl Invoice {
             )?
             .start_new_row(env)?
             .add_cell(
-                Cell::new(env)?
-                    .set_border(Border::NoBorder, env)?
-                    .add(&Paragraph::new_with_text(TOTAL_PRICE_LABEL, env)?, env)?,
+                Cell::new(env)?.set_border(Border::NoBorder, env)?.add(
+                    &Paragraph::new_with_text(TOTAL_PRICE_LABEL, env)?.set_bold(env)?,
+                    env,
+                )?,
                 env,
             )?
             .add_cell(
                 Cell::new(env)?.set_border(Border::NoBorder, env)?.add(
-                    &Paragraph::new_with_text(&self.currency.to_string(), env)?,
+                    &Paragraph::new_with_text(&self.currency.to_string(), env)?.set_bold(env)?,
                     env,
                 )?,
                 env,
@@ -489,13 +495,14 @@ impl Invoice {
                         &format!("{:.2}", self.totals.total_including_vat),
                         env,
                     )?
-                    .set_text_alignment(TextAlignment::Right, env)?,
+                    .set_text_alignment(TextAlignment::Right, env)?
+                    .set_bold(env)?,
                     env,
                 )?,
                 env,
             )?;
 
-        document.add(table, env)?;
+        render_target.document.add(table, env)?;
         Ok(())
     }
 }

@@ -23,7 +23,8 @@ fn main() -> Result<()> {
     let invoice = Invoice {
         header: info::get_header("Factuur"),
         footer: info::get_footer(),
-        reference_id: "10315".into(),
+        order_id: "10315".into(),
+        reference: "Foobar".into(),
         invoice_id: "230307".into(),
         invoice_date: "19-06-2023".to_string(),
         currency: Currency::Euro,

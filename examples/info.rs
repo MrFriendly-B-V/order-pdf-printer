@@ -27,7 +27,7 @@ pub fn get_header(label: &str) -> Header {
                 country: "Nederland".into(),
             },
             vat_number: None,
-            department: None,
+            department: Some("Henk Knakworst".to_string()),
         },
     }
 }

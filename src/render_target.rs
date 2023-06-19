@@ -11,6 +11,7 @@ pub struct RenderTarget<'a> {
     byte_stream: ByteArrayOutputStream<'a>,
     /// The document being worked on
     pub document: Document<'a>,
+    pub font_size: f32,
 }
 
 /// Configurations for the entire document
@@ -36,9 +37,7 @@ impl<'a> RenderTarget<'a> {
             env,
         )?;
 
-        document
-            .set_font_size(11.0, env)?
-            .set_margins(40.0, 30.0, 40.0, 30.0, env)?;
+        document.set_margins(40.0, 30.0, 40.0, 30.0, env)?;
 
         if let Some(font_family) = &config.font_family {
             Self::configure_font_family(&document, font_family, env)?;
@@ -51,6 +50,7 @@ impl<'a> RenderTarget<'a> {
         Ok(Self {
             byte_stream,
             document,
+            font_size: config.font_size.unwrap_or(11.0),
         })
     }
 
