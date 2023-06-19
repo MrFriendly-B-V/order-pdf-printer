@@ -261,7 +261,7 @@ impl Invoice {
         let columns = if self.any_item_has_discount() {
             [1.0, 2.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0].to_vec()
         } else {
-            [1.0, 2.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0].to_vec()
+            [1.0, 2.0, 1.0, 1.0, 1.0, 1.0, 1.0].to_vec()
         };
 
         let table = Table::new(&columns, env)?;
@@ -318,8 +318,6 @@ impl Invoice {
                 None,
                 Some(PRICE_LABEL),
                 None,
-                Some(SUBTOTAL_ITEM_PRICE_LABEL),
-                None,
                 Some(TOTAL_ITEM_LABEL),
             ]
         };
@@ -357,13 +355,9 @@ impl Invoice {
             Some((format!("{:.2}", item.quantity as f32), false)),
             Some((self.currency.to_string(), false)),
             Some((format!("{:.2}", item.price_per_unit), true)),
-            if self.any_item_has_discount() {
-                Some((format!("{:.2}%", item.discount_percentage), true))
-            } else {
-                None
-            },
-            Some((self.currency.to_string(), true)),
-            Some((format!("{:.2}", item.subtotal_price_per_unit), true)),
+            self.any_item_has_discount().then_some((format!("{:.2}%", item.discount_percentage), true)),
+            self.any_item_has_discount().then_some((self.currency.to_string(), true)),
+            self.any_item_has_discount().then_some((format!("{:.2}", item.subtotal_price_per_unit), true)),
             Some((self.currency.to_string(), false)),
             Some((format!("{:.2}", item.total_price), true)),
         ];

@@ -41,7 +41,7 @@ fn main() -> Result<()> {
                 description: "Set 3 stuks Mr.Friendly Filter Globe (nat)".to_string(),
                 quantity: 1,
                 price_per_unit: 59.95,
-                discount_percentage: 0.0,
+                discount_percentage: 10.0,
                 subtotal_price_per_unit: 59.95,
                 total_price: 59.95,
             };
